@@ -44,7 +44,7 @@ await bot.deleteWebHook({ drop_pending_updates: true });
 // Start long polling
 await bot.startPolling();
 
-console.log("🤖 [TEST] BOT VCARD aktif (polling mode) — FILE PASTI TERKIRIM");
+console.log("🤖 BOT VCARD aktif (polling mode) — FILE PASTI TERKIRIM");
 
 /* =======================
    UTIL
@@ -93,10 +93,10 @@ async function processQueue() {
   const { col, label } = cmd;
 
   try {
-    await bot.sendMessage(chatId, "📥 [TEST] Sebentar, otw kirim...");
+    await bot.sendMessage(chatId, "📥 Sebentar, otw kirim...");
 
     // WAJIB: user harus pernah /start biar bot bisa japri
-    await bot.sendMessage(userId, "⏳ [TEST] Sebentar beb...");
+    await bot.sendMessage(userId, "⏳ Sebentar beb...");
 
     const totalNeed = perFile * fileCount;
 
@@ -113,7 +113,7 @@ async function processQueue() {
     if (numbers.length < totalNeed) {
       await bot.sendMessage(
         chatId,
-        `❌ [TEST] Stok tidak cukup.\nButuh: ${totalNeed}\nTersedia: ${numbers.length}`
+        `❌ Stok tidak cukup.\nButuh: ${totalNeed}\nTersedia: ${numbers.length}`
       );
       busy = false;
       return processQueue();
@@ -176,13 +176,13 @@ END:VCARD`
 
     await bot.sendMessage(
       userId,
-      `✅ [TEST] Selesai.\nDikirim: ${fileCount} file\nIsi per file: ${perFile}\nTotal: ${totalNeed}`
+      `✅ Selesai.\nDikirim: ${fileCount} file\nIsi per file: ${perFile}\nTotal: ${totalNeed}`
     );
   } catch (e) {
     console.error("❌ ERROR:", e);
     await bot.sendMessage(
       chatId,
-      "❌ [TEST] Gagal kirim file. Pastikan kamu sudah /start bot dulu (biar bot bisa japri)."
+      "❌ Gagal kirim file. Pastikan kamu sudah /start bot dulu (biar bot bisa japri)."
     );
   }
 
@@ -202,7 +202,7 @@ bot.on("message", (msg) => {
   if (msg.text === "/start") {
     bot.sendMessage(
       chatId,
-      "✅ [TEST] Bot aktif.\n\nFormat:\n#vcardfresh JUMLAH_PER_FILE JUMLAH_FILE\n#vcardfu JUMLAH_PER_FILE JUMLAH_FILE\n\nContoh:\n#vcardfresh 500 3\n(= kirim 3 file, masing-masing isi 500 nomor)"
+      "✅ Bot aktif.\n\nFormat:\n#vcardfresh JUMLAH_PER_FILE JUMLAH_FILE\n#vcardfu JUMLAH_PER_FILE JUMLAH_FILE\n\nContoh:\n#vcardfresh 500 3\n(= kirim 3 file, masing-masing isi 500 nomor)"
     );
     return;
   }
@@ -216,18 +216,18 @@ bot.on("message", (msg) => {
   const fileCount = parseInt(m[3], 10);
 
   if (!Number.isFinite(perFile) || perFile <= 0) {
-    bot.sendMessage(chatId, "❌ [TEST] JUMLAH_PER_FILE harus angka > 0");
+    bot.sendMessage(chatId, "❌ JUMLAH_PER_FILE harus angka > 0");
     return;
   }
   if (!Number.isFinite(fileCount) || fileCount <= 0) {
-    bot.sendMessage(chatId, "❌ [TEST] JUMLAH_FILE harus angka > 0");
+    bot.sendMessage(chatId, "❌ JUMLAH_FILE harus angka > 0");
     return;
   }
 
   // optional safety limit biar gak kebangetan (ubah sesuai kebutuhan)
   const total = perFile * fileCount;
   if (total > 50000) {
-    bot.sendMessage(chatId, "❌ [TEST] Kebanyakan. Turunin jumlahnya dulu.");
+    bot.sendMessage(chatId, "❌ Kebanyakan. Turunin jumlahnya dulu.");
     return;
   }
 
