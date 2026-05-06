@@ -1,7 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
 import { google } from "googleapis";
-import http from "http";
-import url from "url";
 
 /* =======================
    ENV
@@ -9,13 +7,10 @@ import url from "url";
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const SHEET_ID = process.env.SHEET_ID;
 const GOOGLE_CREDENTIALS = process.env.GOOGLE_CREDENTIALS;
-const PORT = process.env.PORT || 3000;
-const BASE_URL = process.env.RENDER_EXTERNAL_URL;
 
-const WEBHOOK_PATH = "/webhook";
 const SHEET_NAME = "DB INCES"; // ganti ke "DB LGN" kalau sheet tab kamu DB LGN
 
-if (!BOT_TOKEN || !SHEET_ID || !GOOGLE_CREDENTIALS || !BASE_URL) {
+if (!BOT_TOKEN || !SHEET_ID || !GOOGLE_CREDENTIALS) {
   console.error("❌ ENV belum lengkap");
   process.exit(1);
 }
@@ -30,38 +25,26 @@ const auth = new google.auth.GoogleAuth({
 const sheets = google.sheets({ version: "v4", auth });
 
 /* =======================
-   TELEGRAM BOT (WEBHOOK)
+   TELEGRAM BOT (LONG POLLING — OPTIMIZED)
 ======================= */
-const bot = new TelegramBot(BOT_TOKEN, { polling: false });
-
-await bot.setWebHook(`${BASE_URL}${WEBHOOK_PATH}`, {
-  allowed_updates: ["message"],
+const bot = new TelegramBot(BOT_TOKEN, {
+  polling: {
+    autoStart: false,
+    interval: 0,
+    params: {
+      timeout: 50,
+      allowed_updates: ["message"],
+    },
+  },
 });
 
-/* =======================
-   HTTP SERVER
-======================= */
-http
-  .createServer((req, res) => {
-    const parsed = url.parse(req.url, true);
+// Bersihin webhook lama dari setup Render
+await bot.deleteWebHook({ drop_pending_updates: true });
 
-    if (req.method === "POST" && parsed.pathname === WEBHOOK_PATH) {
-      let body = "";
-      req.on("data", (c) => (body += c));
-      req.on("end", async () => {
-        try {
-          await bot.processUpdate(JSON.parse(body));
-          res.end("OK");
-        } catch (e) {
-          console.error(e);
-          res.end("ERROR");
-        }
-      });
-    } else {
-      res.end("Bot running");
-    }
-  })
-  .listen(PORT);
+// Start long polling
+await bot.startPolling();
+
+console.log("🤖 [TEST] BOT VCARD aktif (polling mode) — FILE PASTI TERKIRIM");
 
 /* =======================
    UTIL
@@ -110,10 +93,10 @@ async function processQueue() {
   const { col, label } = cmd;
 
   try {
-    await bot.sendMessage(chatId, "📥 Sebentar, otw kirim...");
+    await bot.sendMessage(chatId, "📥 [TEST] Sebentar, otw kirim...");
 
     // WAJIB: user harus pernah /start biar bot bisa japri
-    await bot.sendMessage(userId, "⏳ Sebentar beb...");
+    await bot.sendMessage(userId, "⏳ [TEST] Sebentar beb...");
 
     const totalNeed = perFile * fileCount;
 
@@ -130,7 +113,7 @@ async function processQueue() {
     if (numbers.length < totalNeed) {
       await bot.sendMessage(
         chatId,
-        `❌ Stok tidak cukup.\nButuh: ${totalNeed}\nTersedia: ${numbers.length}`
+        `❌ [TEST] Stok tidak cukup.\nButuh: ${totalNeed}\nTersedia: ${numbers.length}`
       );
       busy = false;
       return processQueue();
@@ -193,13 +176,13 @@ END:VCARD`
 
     await bot.sendMessage(
       userId,
-      `✅ Selesai.\nDikirim: ${fileCount} file\nIsi per file: ${perFile}\nTotal: ${totalNeed}`
+      `✅ [TEST] Selesai.\nDikirim: ${fileCount} file\nIsi per file: ${perFile}\nTotal: ${totalNeed}`
     );
   } catch (e) {
     console.error("❌ ERROR:", e);
     await bot.sendMessage(
       chatId,
-      "❌ Gagal kirim file. Pastikan kamu sudah /start bot dulu (biar bot bisa japri)."
+      "❌ [TEST] Gagal kirim file. Pastikan kamu sudah /start bot dulu (biar bot bisa japri)."
     );
   }
 
@@ -219,7 +202,7 @@ bot.on("message", (msg) => {
   if (msg.text === "/start") {
     bot.sendMessage(
       chatId,
-      "✅ Bot aktif.\n\nFormat:\n#vcardfresh JUMLAH_PER_FILE JUMLAH_FILE\n#vcardfu JUMLAH_PER_FILE JUMLAH_FILE\n\nContoh:\n#vcardfresh 500 3\n(= kirim 3 file, masing-masing isi 500 nomor)"
+      "✅ [TEST] Bot aktif.\n\nFormat:\n#vcardfresh JUMLAH_PER_FILE JUMLAH_FILE\n#vcardfu JUMLAH_PER_FILE JUMLAH_FILE\n\nContoh:\n#vcardfresh 500 3\n(= kirim 3 file, masing-masing isi 500 nomor)"
     );
     return;
   }
@@ -233,18 +216,18 @@ bot.on("message", (msg) => {
   const fileCount = parseInt(m[3], 10);
 
   if (!Number.isFinite(perFile) || perFile <= 0) {
-    bot.sendMessage(chatId, "❌ JUMLAH_PER_FILE harus angka > 0");
+    bot.sendMessage(chatId, "❌ [TEST] JUMLAH_PER_FILE harus angka > 0");
     return;
   }
   if (!Number.isFinite(fileCount) || fileCount <= 0) {
-    bot.sendMessage(chatId, "❌ JUMLAH_FILE harus angka > 0");
+    bot.sendMessage(chatId, "❌ [TEST] JUMLAH_FILE harus angka > 0");
     return;
   }
 
   // optional safety limit biar gak kebangetan (ubah sesuai kebutuhan)
   const total = perFile * fileCount;
   if (total > 50000) {
-    bot.sendMessage(chatId, "❌ Kebanyakan. Turunin jumlahnya dulu.");
+    bot.sendMessage(chatId, "❌ [TEST] Kebanyakan. Turunin jumlahnya dulu.");
     return;
   }
 
@@ -252,4 +235,7 @@ bot.on("message", (msg) => {
   processQueue();
 });
 
-console.log("🤖 BOT FINAL FIX — FILE PASTI TERKIRIM");
+// Error handler buat polling errors (network glitch, dll) — bot gak crash diam-diam
+bot.on("polling_error", (err) => {
+  console.error("⚠️ Polling error:", err.code, "-", err.message);
+});
